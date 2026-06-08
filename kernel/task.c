@@ -12,16 +12,16 @@ void xTaskCreate(void (*task)(void), uint64_t stack_size, int priority){
 
   t->entry = task;
   t->priority = priority;
-  t->state = 0;
+  t->state = READY;
   t->stack_size = stack_size;
-  t->stack = (uint8_t *) kmalloc(stack_size);
+  t->stack = (uint8_t *)kmalloc(stack_size);
   
   if (!t->stack)
     return;
 
   uint64_t *sp = (uint64_t *)(t->stack + stack_size);
 
-  t->regs[0] = (uint64_t) task; /* ra */
-  t->regs[1] = (uint64_t) sp; /* sp */
+  t->regs[0] = (uint64_t) task; // ra
+  t->regs[1] = (uint64_t) sp;   // sp
   t->sepc = (uint64_t) task;
 }

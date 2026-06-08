@@ -3,9 +3,9 @@
 #include <stdint.h>
 #define MAX_TASKS 8
 
-//  enum STATE{
-//    READY, RUNNING, BLOCKED, SUSPENDED  
-//  };
+typedef enum{
+  READY, RUNNING, BLOCKED, SUSPENDED  
+} STATE;
 
 typedef struct{
   uint64_t regs[31];
@@ -14,7 +14,8 @@ typedef struct{
   void (*entry)(void);
   
   int priority;
-  int state;
+  STATE state;
+  // int state;
 
   uint8_t *stack;
   uint64_t stack_size;
