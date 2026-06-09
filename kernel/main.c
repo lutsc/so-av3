@@ -3,9 +3,19 @@
 #include "memory.h"
 #include "timer.h"
 #include "trap.h"
-  
+
 extern void uart_print(const char*);
 extern void trap_entry(void);
+
+void task1(void){
+  while (1)
+    uart_print("Task 1 running\n");
+}
+
+void task2(void){
+  while (1)
+    uart_print("Task 2 running\n");
+}
 
 void kernel_main(){
   memory_init();
@@ -18,14 +28,4 @@ void kernel_main(){
   timer_init(100000);
   scheduler_start();
   while (1);
-}
-
-void task1(void){
-  while (1)
-    uart_print("Task 1 running\n");
-}
-
-void task2(void){
-  while (1)
-    uart_print("Task 2 running\n");
 }

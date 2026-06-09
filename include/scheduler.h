@@ -1,5 +1,5 @@
 #ifndef SCHEDULER_H
-#define SCHEDULER_H
+#define SCHEDULER_H 1
 #include <stdint.h>
 
 typedef int (*sched_algo_t)(void);

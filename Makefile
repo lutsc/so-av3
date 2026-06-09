@@ -3,7 +3,7 @@ CROSS = riscv64-unknown-elf-
 CC = $(CROSS)gcc
 LD = $(CROSS)ld
 
-CFLAGS =
+CFLAGS = \
 	-march=rv64gc -mabi=lp64 \
 	-mcmodel=medany \
 	-ffreestanding \
@@ -19,14 +19,20 @@ OBJS = \
 	uart.o \
 	memory.o \
 	task.o \
-	scheduler.o
+	scheduler.o \
+	trap_entry.o \
+	trap.o \
+	timer.o
 
 all: kernel.elf
 
-kernel.elf: $(OBJS)
+kernel.elf:	$(OBJS)
 	$(LD) -T linker.ld $(OBJS) -o kernel.elf
 
-%.o: boot/%.s
+%.o: boot/%.S
+	$(CC) $(CFLAGS) -c $<
+
+context.o: kernel/context.S
 	$(CC) $(CFLAGS) -c $<
 
 %.o: kernel/%.c

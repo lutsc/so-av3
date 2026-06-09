@@ -3,8 +3,6 @@
 
 trap_entry:
   addi sp, sp, -256
-  # TODO:
-  # Salvar x1..x31 na stack.
   sw ra, 0(sp)
   sw sp, 8(sp)
   sw gp, 16(sp)
@@ -40,8 +38,6 @@ trap_entry:
   mv a0, sp
   call trap_handler
   
-  # TODO:
-  # Restaurar x1..x31 da stack.
   lw ra, 0(sp)
   lw sp, 8(sp)
   lw gp, 16(sp)
