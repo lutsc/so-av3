@@ -1,4 +1,5 @@
 #include "timer.h"
+#include <uart.h>
 
 static uint64_t tick_interval = 100000;
 
@@ -33,20 +34,28 @@ void timer_next(void)
 
 void timer_init(uint64_t interval)
 {
+    uart_print("T1\n");
+
     if (interval != 0)
         tick_interval = interval;
 
-    /* STIE = Supervisor Timer Interrupt Enable */
+    uart_print("T2\n");
+
     asm volatile(
         "csrs sie, %0"
         :
         : "r"(1UL << 5)
     );
 
-    /* SIE = Global Supervisor Interrupt Enable */
+    uart_print("T3\n");
+
     asm volatile(
         "csrsi sstatus, 2"
     );
 
+    uart_print("T4\n");
+
     timer_next();
+
+    uart_print("T5\n");
 }

@@ -21,7 +21,7 @@ void xTaskCreate(void (*task)(void), uint64_t stack_size, int priority){
 
   uint64_t *sp = (uint64_t *)((uint64_t)(t->stack + stack_size) & ~15ULL);
 
-  for (int i = 0; i < 32; i++) {
+  for (int i = 0; i < 31; i++) {
     t->regs[i] = 0;
   }
 
