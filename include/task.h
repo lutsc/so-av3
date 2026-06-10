@@ -15,7 +15,6 @@ typedef struct{
   
   int priority;
   STATE state;
-  // int state;
 
   uint8_t *stack;
   uint64_t stack_size;

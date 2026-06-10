@@ -3,7 +3,6 @@
 #include <stdint.h>
 
 extern TCB tasks[];
-static TCB kernel_context;
 extern int task_count;
 
 extern void context_switch(void*, void*);
@@ -38,6 +37,7 @@ void yield(void){
     return;
 
   current = next;
+
   context_switch(tasks[prev].regs, tasks[next].regs);
 }
 
@@ -51,22 +51,34 @@ void schedule_from_trap(uint64_t *frame){
   if (prev == next)
     return;
 
+  // Guarda registradores do contexto antigo
   for (int i = 0; i < 31; i++)
     tasks[prev].regs[i] = frame[i];
 
-  asm volatile("csrr %0, sepc": "=r"(tasks[prev].sepc));
+  // Salva sepc da task atual
+  asm volatile(
+    "csrr %0, sepc"
+    : "=r"(tasks[prev].sepc)
+  );
 
   current = next;
 
+  // Passa registradores do contexto novo pro frame
   for (int i = 0; i < 31; i++)
     frame[i] = tasks[next].regs[i];
 
-  asm volatile("csrw sepc, %0":: "r"(tasks[next].sepc));
+  // Restaura sepc da próxima task
+  asm volatile(
+    "csrw sepc, %0"
+    :
+    : "r"(tasks[next].sepc)
+  );
 }
 
 void scheduler_start(void){
   if (task_count == 0)
     return;
+
   current = 0;
-  context_switch(&kernel_context.regs, tasks[0].regs);
+  tasks[0].entry();
 }
