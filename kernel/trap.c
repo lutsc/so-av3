@@ -3,6 +3,6 @@
 #include "scheduler.h"
 #include "uart.h"
 
-void trap_handler(uint64_t *frame){
-
+void trap_handler(uint64_t *frame) {
+  
 }

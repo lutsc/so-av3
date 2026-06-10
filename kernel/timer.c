@@ -3,59 +3,41 @@
 
 static uint64_t tick_interval = 100000;
 
-/*
- * OpenSBI Legacy Extension
- * SBI_SET_TIMER = 0
- */
-static inline void sbi_set_timer(uint64_t time)
-{
-    register uint64_t a0 asm("a0") = time;
-    register uint64_t a7 asm("a7") = 0;
+// Especificação do SBI
+#define SBI_EID 0x00 // Extension ID 
 
-    asm volatile(
-        "ecall"
-        :
-        : "r"(a0), "r"(a7)
-        : "memory"
-    );
+static inline void sbi_set_timer(uint64_t time){
+  register uint64_t a0 asm("a0") = time;
+  register uint64_t a7 asm("a7") = SBI_EID; // legacy set_timer EID
+  asm volatile(
+    "ecall"
+    : "+r"(a0) // leitura e escrita do valor, passa tempo e pode retornar erro no reg. a0
+    : "r"(a7)  // só leitura, passa extensão da função nos registrador a7
+    : "memory"
+  );
 }
 
-void timer_next(void)
-{
-    uint64_t now;
+void timer_next(void){
+	uint64_t now;
 
-    asm volatile(
-        "rdtime %0"
-        : "=r"(now)
-    );
-
-    sbi_set_timer(now + tick_interval);
+  // pseudo-instrução que lê o valor de tempo do CSR (Control and Status Register) 
+  asm volatile("rdtime %0" : "=r"(now) : : "memory"); 
+  
+  // tempo atual + intervalo
+  sbi_set_timer(now + tick_interval);
 }
 
-void timer_init(uint64_t interval)
-{
-    uart_print("T1\n");
+void timer_init(uint64_t interval){
+  if (interval != 0)
+    tick_interval = interval;
 
-    if (interval != 0)
-        tick_interval = interval;
+  timer_next();
 
-    uart_print("T2\n");
-
-    asm volatile(
-        "csrs sie, %0"
-        :
-        : "r"(1UL << 5)
-    );
-
-    uart_print("T3\n");
-
-    asm volatile(
-        "csrsi sstatus, 2"
-    );
-
-    uart_print("T4\n");
-
-    timer_next();
-
-    uart_print("T5\n");
+  // ativa o 5° bit do reg. sie é o stie, habilitando interrupção do timer 
+  // basicamente se o timer disparar, o modo supervisor interrompe o código
+  asm volatile("csrs sie, %0" :: "r"(1 << 5));
+  
+  // ativa o 1° bit do reg. sstatus, habilitando interrupções em geral
+  // tem que ativar pra qualquer interrupção acontecer
+  asm volatile("csrs sstatus, %0" :: "r"(1 << 1));
 }

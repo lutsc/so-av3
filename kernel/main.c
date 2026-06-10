@@ -1,39 +1,33 @@
 #include "uart.h"
 #include "task.h"
 #include "scheduler.h"
+#include "memory.h"
+#include "timer.h"
+#include "trap.h"
 
-void task1(void)
-{
-    while (1)
-    {
-        uart_print("Task 1\n");
+extern void uart_print(const char*);
+extern void trap_entry(void);
 
-        for (volatile int i = 0; i < 100000; i++);
-
-        yield();
-    }
+void task1(void){
+	uart_print("Task 1 running\n");
+	yield();
 }
 
-void task2(void)
-{
-    while (1)
-    {
-        uart_print("Task 2\n");
-
-        for (volatile int i = 0; i < 100000; i++);
-
-        yield();
-    }
+void task2(void){
+	uart_print("Task 2 running\n");
+	yield();
 }
 
-void kernel_main(void)
-{
-    uart_print("=== Kernel ====\n");
+void kernel_main(){
+	memory_init();
 
-    xTaskCreate(task1, 4096, 1);
-    xTaskCreate(task2, 4096, 1);
+	xTaskCreate(task1, 2048, 1);
+	xTaskCreate(task2, 2048, 1);
 
-    scheduler_start();
+	asm volatile("csrw stvec, %0" :: "r"(trap_entry));
 
-    while (1);
+	timer_init(100000);
+
+	scheduler_start();
+	while (1);
 }
