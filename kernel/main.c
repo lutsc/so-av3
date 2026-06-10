@@ -8,13 +8,13 @@ extern void uart_print(const char*);
 extern void trap_entry(void);
 
 void task1(void){
-  while (1)
     uart_print("Task 1 running\n");
+    yield();
 }
 
 void task2(void){
-  while (1)
     uart_print("Task 2 running\n");
+    yield();
 }
 
 void kernel_main(){

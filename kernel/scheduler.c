@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 extern TCB tasks[];
+static TCB kernel_context;
 extern int task_count;
 
 extern void context_switch(void*, void*);
@@ -67,5 +68,5 @@ void scheduler_start(void){
   if (task_count == 0)
     return;
   current = 0;
-  tasks[0].entry();
+  context_switch(&kernel_context.regs, tasks[0].regs);
 }
