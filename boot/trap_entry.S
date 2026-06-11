@@ -1,5 +1,6 @@
 .section .text
 .global trap_entry
+.align 3
 
 trap_entry:
   addi sp, sp, -256
