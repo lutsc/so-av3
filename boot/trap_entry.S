@@ -1,13 +1,18 @@
 .section .text
 .global trap_entry
-.align 3
+.align 4
 
 trap_entry:
   addi sp, sp, -256
   
   # Salvando x1 a x31 na stack
   sd ra, 0(sp)
-  sd sp, 8(sp)
+
+  # Salva stack pointer no t0
+  # Utilizar sscratch?
+  addi t0, sp, 0
+  sd t0, 8(sp)
+
   sd gp, 16(sp)
   sd tp, 24(sp)
   sd t0, 32(sp)
@@ -43,7 +48,7 @@ trap_entry:
   
   # Restaurando x1 a x31 da stack
   ld ra, 0(sp)
-  ld sp, 8(sp)
+  # ld sp, 8(sp)
   ld gp, 16(sp)
   ld tp, 24(sp)
   ld t0, 32(sp)
@@ -74,6 +79,8 @@ trap_entry:
   ld t5, 232(sp)
   ld t6, 240(sp)
   
+  # Recupera stack pointer só depois usá-lo totalmente
+  ld sp, 8(sp)
   addi sp, sp, 256
   
   sret
