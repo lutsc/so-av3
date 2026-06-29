@@ -2,19 +2,6 @@
 #define FS_H 1
 #include <stdint.h>
 
-typedef struct{
-  uint32_t magic;
-  uint32_t total_blocks;
-  uint32_t total_clusters;
-  uint32_t cluster_size; // Tamanho da cluster - bytes
-} superblock_t;
-
-typedef struct{
-  char name[32]; 
-  uint32_t size; // Tamanho do arquivo - bytes
-  uint16_t first_cluster; // Índice
-} dir_entry_t;
-
 int fs_init(void);
 
 int fs_create(const char *name);
