@@ -1,7 +1,6 @@
 #include "fs.h"
 #include "block.h"
 #include "uart.h"
-#include <string.h>
 
 // Constantes FAT
 #define SIMPLEFAT_MAGIC 0x53464154 // Flag de SimpleFAT
@@ -9,8 +8,6 @@
 #define FAT_EOF 0xFFFF // Flag fim de cluster
 
 // Tamanho e número diversos
-#define DISK_SIZE (1024*1024) // Tamanho de 1MB
-#define BLOCK_SIZE 512 // Qtd. bytes de cada bloco
 #define CLUSTER_SIZE 512 // Qtd. bytes de cada cluster, igual a bloco para encaixar
 #define NUM_CLUSTERS 2048 // Qtd. de clusters
 
@@ -43,6 +40,22 @@ static superblock_t sb;
 static uint16_t fat[NUM_CLUSTERS];
 static dir_entry_t root[MAX_DIR_ENTRIES];
 
+// Funções helper
+void mem_set(void *pointer, int value, uint32_t num) {
+	uint8_t *ptr = (uint8_t *)pointer;
+
+	for (uint32_t i = 0; i < num; i++)
+		ptr[i] = value;
+}
+
+void mem_copy(void *destination, void *source, uint32_t num) {
+	uint8_t *dst = (uint8_t *)destination;
+	uint8_t *src = (uint8_t *)source; 
+
+	for (uint32_t i = 0; i < num; i++)
+		dst[i] = src[i];
+}
+
 int fs_init(void){
 	// Inicializando superbloco
 	sb.magic = SIMPLEFAT_MAGIC;
@@ -52,15 +65,15 @@ int fs_init(void){
 	
 	// Alocando espaço pro superbloco
 	uint8_t buf[BLOCK_SIZE];
-	memset(buf, 0, BLOCK_SIZE);
-	memcpy(buf, &sb, sizeof(sb));
+	mem_set(buf, 0, BLOCK_SIZE);
+	mem_copy(buf, &sb, sizeof(sb));
 	block_write(SUPERBLOCK_START_BLOCK, buf);
 
 	// Inicializando FAT
-	memset(fat, 0, sizeof(fat));
+	mem_set(fat, 0, sizeof(fat));
 
 	// Inicializando diretório
-	memset(root, 0, sizeof(root));
+	mem_set(root, 0, sizeof(root));
 	
 	uart_print("SimpleFAT inicializado.\n");
 	
