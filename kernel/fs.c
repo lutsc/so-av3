@@ -67,6 +67,18 @@ void mem_copy(void *destination, void *source, uint32_t num) {
 		dst[i] = src[i];
 }
 
+// Percorre nome do arquivo (array de char) e verifica se são iguais (Igual = 1, Diferente = 0)
+int check_same_filename(const char *file1, const char *file2) {
+	for (int i = 0; i < MAX_FILENAME; i++) {
+		if (file1[i] != file2[i])
+			return 0; 
+		if (file1[i] == '\0')
+			return 1;
+	}
+	return 1; 
+}
+
+// Inicia pastas
 int fs_init(void){
 	// Inicializando superbloco
 	sb.magic = SIMPLEFAT_MAGIC;
@@ -102,24 +114,14 @@ int cluster_alloc(void){
   return -1;
 }
 
-// Percorre nome do arquivo (array de char) e verifica se são iguais (Igual = 1, Diferente = 0)
-int check_available_filename(const char *file1, const char *file2) {
-	for (int i = 0; i < MAX_FILENAME; i++) {
-		if (file1[i] != file2[i])
-			return 0; 
-		if (file1[i] == '\0')
-			return 1;
-	}
-	return 1; 
-}
-
+// Cria arquivo
 int fs_create(const char *name){
 	// Procura diretório livre para arquivo
 	int free_slot = -1;
 	for (int i = 0; i < MAX_DIR_ENTRIES; i++) {
 		if (root[i].used) {
 			// Checa se há um arquivo do mesmo nome
-			if (check_available_filename(root[i].name, name)) {
+			if (check_same_filename(root[i].name, name)) {
 				uart_print("Arquivo com mesmo nome já existe.\n");
 				return -1;
 			}
@@ -158,11 +160,31 @@ int fs_create(const char *name){
 }
 
 int fs_open(const char *name){
-	/*
-	* TODO:
-	* Localizar entrada.
-	*/
-	return 0;
+	// Percorre diretório pelo arquivo dado e devolve índice
+	int directory_index = -1;
+	for (int i = 0; i < MAX_DIR_ENTRIES; i++) {
+		if (root[i].used && check_same_filename(root[i].name, name)) {
+			directory_index = i;
+			break;
+		}
+	}
+
+	if (directory_index == -1) {
+		uart_print("Arquivo não encontrado.\n");
+		return -1;
+	}
+
+	// Percorre diretório por um descritor livre e devolve índice
+	for (int i = 0; i < MAX_OPEN_FILES; i++) {
+		if (fdt[i].used == 0) {
+			fdt[i].used = 1;
+			fdt[i].dir_index = directory_index;
+			fdt[i].pos = 0;
+			return i;
+		}
+	}
+	uart_print("Sem descritores livres.\n");
+	return -1;
 }
 
 int fs_write(int fd, const void *buffer, uint32_t size){
