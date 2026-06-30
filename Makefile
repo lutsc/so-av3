@@ -22,7 +22,9 @@ OBJS = \
 	scheduler.o \
 	trap_entry.o \
 	timer.o \
-	trap.o 
+	trap.o \
+	block.o \
+	fs.o
 
 all: kernel.elf
 
@@ -31,6 +33,9 @@ kernel.elf: $(OBJS)
 
 %.o: boot/%.S
 	$(CC) $(CFLAGS) -c $<
+
+%.o: drivers/%.c
+	$(CC) $(CFLAGS) -Iinclude -c $<
 
 %.o: kernel/%.c
 	$(CC) $(CFLAGS) -Iinclude -c $<
