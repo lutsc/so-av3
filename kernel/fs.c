@@ -303,15 +303,36 @@ int fs_write(int fd, const void *buffer, uint32_t size){
 }
 
 int fs_read(int fd, void *buffer, uint32_t size){
-	/*
-	* TODO:
-	* Percorrer FAT.
-	*/
-	/*
-	* TODO:
-	* Copiar dados.
-	*/
-	return size;
+	// Verifica se tem diretórios disponíveis (inicializados, abaixo do máximo e ainda não aberto)
+	if (fd < 0 || fd >= MAX_OPEN_FILES || fdt[fd].used == 0) 
+		return -1;
+
+	dir_entry_t *entry = &root[fdt[fd].dir_index];
+	uint8_t *buf = (uint8_t *)buffer;
+	uint32_t bytes_read = 0;
+	
+	// Começa do primeiro cluster do arquivo
+	uint16_t current_cluster = entry->first_cluster;
+	
+	// Percorre clusters do arquivo até fim de clusters ou qtd. dada de leitura bater
+	while (current_cluster != FAT_EOF && bytes_read < size) {
+		// Lê bloco da cluster atual
+		uint8_t block[BLOCK_SIZE];
+		block_read(DATA_START_BLOCK + (current_cluster - 1), block);
+
+		// Copia o conteúdo do bloco para o buffer dado
+		for (uint32_t i = 0; i < BLOCK_SIZE && bytes_read < size; i++) {
+			buf[bytes_read] = block[i];
+			bytes_read++;
+		}
+
+		// Passa pro próximo cluster
+		current_cluster = fat[current_cluster];
+	}
+
+	// Atualiza o descritor com o quanto do arquivo foi lido
+	fdt[fd].pos += bytes_read;
+	return bytes_read;
 }
 
 int fs_delete(const char *name){
