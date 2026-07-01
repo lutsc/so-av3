@@ -144,6 +144,7 @@ int fs_init(void){
 	// Inicializando diretório
 	mem_set(root, 0, sizeof(root));
 	
+	fs_sync();
 	uart_print("SimpleFAT inicializado.\n");
 	
 	return 0;
@@ -199,6 +200,7 @@ int fs_create(const char *name){
 	root[directory_index].first_cluster = (uint16_t)free_cluster;
 	root[directory_index].used = 1;
 
+	fs_sync();
 	uart_print("Arquivo criado: ");
 	uart_print(name);
 	uart_print("\n");
@@ -295,6 +297,8 @@ int fs_write(int fd, const void *buffer, uint32_t size){
 	fdt[fd].pos = size;
 	entry->size = size;
 	entry->first_cluster = first;
+
+	fs_sync();
 	return (int)size;
 }
 
@@ -336,6 +340,7 @@ int fs_delete(const char *name){
 	// Remove arquivo do diretório
 	mem_set(&root[directory_index], 0, sizeof(dir_entry_t));
 
+	fs_sync();
 	uart_print("Arquivo removido: ");
 	uart_print(name);
 	uart_print("\n");
