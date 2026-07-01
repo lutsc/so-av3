@@ -4,16 +4,16 @@
 
 #define NULL ((void*)0) // NULL
 
-// Constantes FAT
+// Constantes SimpleFAT
 #define SIMPLEFAT_MAGIC 0x53464154 // Flag de SimpleFAT
-#define FAT_FREE 0x0000 // Flag cluster livre
-#define FAT_EOF 0xFFFF // Flag fim de cluster
+#define FAT_FREE 0x0000 					 // Flag cluster livre
+#define FAT_EOF 0xFFFF 						 // Flag fim de arquivo
 
 // Tamanho e número diversos
-#define CLUSTER_SIZE 512 // Qtd. bytes de cada cluster, igual a bloco para encaixar
-#define NUM_CLUSTERS 2048 // Qtd. de clusters
+#define CLUSTER_SIZE 512 	// Qtd. bytes de cada cluster, igual a bloco para encaixar
+#define NUM_CLUSTERS 2048 // Qtd. de total clusters
 
-#define MAX_FILENAME 32 // Qtd. char para nome do arquivo
+#define MAX_FILENAME 32 	 // Qtd. char para nome do arquivo
 #define MAX_DIR_ENTRIES 64 // Qtd. máxima de diretórios na root
 
 #define MAX_OPEN_FILES 8 // Qtd. máxima de arquivos em um diretório
@@ -22,7 +22,7 @@
 #define SUPERBLOCK_START_BLOCK 0 // Bloco que inicia o superbloco [0]
 #define FAT_START_BLOCK 1 // Bloco que inicia a seção de FAT [1 a 8]
 #define DIR_START_BLOCK 9 // Bloco que inicia a seção de diretórios [9 a 10]
-#define DATA_START_BLOCK 11 // Bloco que inicia a seção de dados [11 a 2047]
+#define DATA_START_BLOCK 14 // Bloco que inicia a seção de dados [11 a 2047]
 
 // Estrutura do superbloco
 typedef struct{
@@ -78,6 +78,50 @@ int check_same_filename(const char *file1, const char *file2) {
 			return 1;
 	}
 	return 1; 
+}
+
+// Passa dados das variáveis globais pro disco virtual 
+void fs_sync(void) {
+  uint8_t buffer[BLOCK_SIZE];
+
+	uint32_t RESERVED_FAT_BLOCKS = (DIR_START_BLOCK - FAT_START_BLOCK); // 9 - 1 = 8 blocos
+  uint32_t ENTRIES_PER_BLOCKS = BLOCK_SIZE / sizeof(uint16_t); // 512 / 2 = 256 entradas
+	
+  // Salva mudanças da FAT nos clusters reservados 
+  for (uint32_t i = 0; i < RESERVED_FAT_BLOCKS; i++) {
+		// Limpa buffer por precaução
+		mem_set(buffer, 0, BLOCK_SIZE);
+
+		// Ponteiro de onde começa o bloco que deve ser escrito
+		uint16_t *fat_ptr = &fat[i * ENTRIES_PER_BLOCKS];
+
+		// Copia pro buffer e escreve no bloco
+    mem_copy(buffer, fat_ptr, BLOCK_SIZE);
+    block_write(FAT_START_BLOCK + i, buffer);
+  }
+
+	uint32_t RESERVED_DIR_BLOCKS = ((DATA_START_BLOCK - DIR_START_BLOCK)); // 14 - 9 = 5 blocos
+
+  // Salva mudanças da root nos clusters reservados
+  for (uint32_t i = 0; i < RESERVED_DIR_BLOCKS; i++) {
+		// Limpa buffer por precaução
+		mem_set(buffer, 0, BLOCK_SIZE);
+
+		// Cálculo para o quanto a cluster vai ser preenchida
+    uint32_t block_offset = i * BLOCK_SIZE;
+
+		// Se o que resta do root for menor que precisa, copia apenas o que cabe
+    uint32_t chunk;
+    if ((sizeof(root) - block_offset) < BLOCK_SIZE) {
+      chunk = sizeof(root) - block_offset;
+    } else {
+      chunk = BLOCK_SIZE;
+    }
+
+		// Passa pedaço que vai ser escrito na root e depois escreve como bloco no disco virtual
+    mem_copy(buffer, &((uint8_t *)root)[block_offset], chunk);
+    block_write(DIR_START_BLOCK + i, buffer);
+  }
 }
 
 // Inicia pastas
