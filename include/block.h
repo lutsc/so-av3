@@ -2,6 +2,8 @@
 #define BLOCK_H 1
 #include <stdint.h>
 
+#define NULL ((void*)0) // NULL
+
 #define DISK_SIZE (1024*1024) // Tamanho de 1MB
 #define BLOCK_SIZE 512 // Qtd. bytes de cada bloco
 
