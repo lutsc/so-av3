@@ -117,7 +117,7 @@ int cluster_alloc(void){
 // Cria arquivo
 int fs_create(const char *name){
 	// Procura diretório livre para arquivo
-	int free_slot = -1;
+	int directory_index = -1;
 	for (int i = 0; i < MAX_DIR_ENTRIES; i++) {
 		if (root[i].used) {
 			// Checa se há um arquivo do mesmo nome
@@ -125,12 +125,12 @@ int fs_create(const char *name){
 				uart_print("Arquivo com mesmo nome já existe.\n");
 				return -1;
 			}
-		} else if (free_slot == -1) {
-			free_slot = i; // Guarda índice se slot está livre
+		} else if (directory_index == -1) {
+			directory_index = i; // Guarda índice se slot está livre
 		}
 	}
 
-	if (free_slot == -1) {
+	if (directory_index == -1) {
 		uart_print("Diretório cheio.\n");
 		return -1;
 	}
@@ -142,16 +142,16 @@ int fs_create(const char *name){
 	}
 
 	// Atualizar diretório
-	mem_set(&root[free_slot], 0, sizeof(dir_entry_t));
+	mem_set(&root[directory_index], 0, sizeof(dir_entry_t));
 
 	// Passa nome do arquivo para o arquivo do slot
-	for (int i = 0; (i < (MAX_FILENAME-1)) && (name[i] != '\0'); i++)
-		root[free_slot].name[i] = name[i];
+	for (int i = 0; i < (MAX_FILENAME-1) && (name[i] != '\0'); i++)
+		root[directory_index].name[i] = name[i];
 
 	// Inicializa arquivo com 0 bytes de dados, cluster inicial e marca ocupado
-	root[free_slot].size = 0;
-	root[free_slot].first_cluster = (uint16_t)free_cluster;
-	root[free_slot].used = 1;
+	root[directory_index].size = 0;
+	root[directory_index].first_cluster = (uint16_t)free_cluster;
+	root[directory_index].used = 1;
 
 	uart_print("Arquivo criado: ");
 	uart_print(name);
@@ -177,9 +177,9 @@ int fs_open(const char *name){
 	// Percorre diretório por um descritor livre e devolve índice
 	for (int i = 0; i < MAX_OPEN_FILES; i++) {
 		if (fdt[i].used == 0) {
-			fdt[i].used = 1;
-			fdt[i].dir_index = directory_index;
 			fdt[i].pos = 0;
+			fdt[i].dir_index = directory_index;
+			fdt[i].used = 1;
 			return i;
 		}
 	}
@@ -216,18 +216,34 @@ int fs_read(int fd, void *buffer, uint32_t size){
 }
 
 int fs_delete(const char *name){
-	/*
-	* TODO:
-	* Localizar arquivo.
-	*/
-	/*
-	* TODO:
-	* Liberar clusters.
-	*/
-	/*
-	* TODO:
-	* Remover entrada.
-	*/
+	// Percorre diretório pelo arquivo dado e devolve índice
+	int directory_index = -1;
+	for (int i = 0; i < MAX_DIR_ENTRIES; i++) {
+		if (root[i].used && check_same_filename(root[i].name, name)) {
+			directory_index = i;
+			break;
+		}
+	}
+
+	if (directory_index == -1) {
+		uart_print("Arquivo não encontrado.\n");
+		return -1;
+	}
+
+	// Percorre clusters, liberando cada uma
+	uint16_t current = root[directory_index].first_cluster;
+	while (current != FAT_EOF && current != FAT_FREE) {
+		uint16_t next = fat[current];
+		fat[current] = FAT_FREE;
+		current = next;
+	}
+	
+	// Remove arquivo do diretório
+	mem_set(&root[directory_index], 0, sizeof(dir_entry_t));
+
+	uart_print("Arquivo removido: ");
+	uart_print(name);
+	uart_print("\n");
 	return 0;
 }
 
