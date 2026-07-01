@@ -299,10 +299,15 @@ int fs_delete(const char *name){
 }
 
 int fs_close(int fd){
-	/*
-	* TODO:
-	*	Liberar descritor.
-	*/
-	
+	if (fd < 0 || fd >= MAX_OPEN_FILES || fdt[fd].used == 0) {
+    uart_print("Erro: Descritor inválido ou fechado.\n");
+    return -1;
+  }
+
+  // Zera descritor
+  fdt[fd].pos = 0;
+  fdt[fd].dir_index = 0;
+  fdt[fd].used = 0;
+
 	return 0;
 }
