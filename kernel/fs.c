@@ -222,6 +222,13 @@ int fs_open(const char *name){
 		return -1;
 	}
 
+	for (int i = 0; i < MAX_OPEN_FILES; i++) {
+    if (fdt[i].used && fdt[i].dir_index == directory_index) {
+      uart_print("Erro: Arquivo já está aberto.\n");
+      return -1;
+    }
+  }
+
 	// Percorre diretório por um descritor livre e devolve índice
 	for (int i = 0; i < MAX_OPEN_FILES; i++) {
 		if (fdt[i].used == 0) {
