@@ -6,7 +6,7 @@ static uint8_t disk[DISK_SIZE];
 
 int block_read(uint32_t block, void *buffer) {
   if (block >= (DISK_SIZE / BLOCK_SIZE) || buffer == NULL){
-    uart_print("Erro na leitura de bloco ou buffer vazio.");
+    uart_print("Erro na leitura de bloco ou buffer vazio.\n");
     return -1;
   }
 
@@ -21,7 +21,7 @@ int block_read(uint32_t block, void *buffer) {
 
 int block_write(uint32_t block, const void *buffer) {
   if (block >= (DISK_SIZE / BLOCK_SIZE) || buffer == NULL){
-    uart_print("Erro na escrita de bloco ou buffer vazio.");
+    uart_print("Erro na escrita de bloco ou buffer vazio.\n");
     return -1;
   }
 
