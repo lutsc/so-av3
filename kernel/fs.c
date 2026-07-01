@@ -2,8 +2,6 @@
 #include "block.h"
 #include "uart.h"
 
-#define NULL ((void*)0) // NULL
-
 // Constantes SimpleFAT
 #define SIMPLEFAT_MAGIC 0x53464154 // Flag de SimpleFAT
 #define FAT_FREE 0x0000 					 // Flag cluster livre
@@ -222,12 +220,12 @@ int fs_open(const char *name){
 		return -1;
 	}
 
-	for (int i = 0; i < MAX_OPEN_FILES; i++) {
-    if (fdt[i].used && fdt[i].dir_index == directory_index) {
-      uart_print("Erro: Arquivo já está aberto.\n");
-      return -1;
-    }
-  }
+	// for (int i = 0; i < MAX_OPEN_FILES; i++) {
+  //   if (fdt[i].used && fdt[i].dir_index == directory_index) {
+  //     uart_print("Erro: Arquivo já está aberto.\n");
+  //     return -1;
+  //   }
+  // }
 
 	// Percorre diretório por um descritor livre e devolve índice
 	for (int i = 0; i < MAX_OPEN_FILES; i++) {
@@ -321,6 +319,15 @@ int fs_read(int fd, void *buffer, uint32_t size){
 	// Começa do primeiro cluster do arquivo
 	uint16_t current_cluster = entry->first_cluster;
 	
+	// Avança até onde tem dados pra ler
+	uint32_t skip_clusters = (fdt[fd].pos / CLUSTER_SIZE);
+	for (uint32_t i = 0; i < skip_clusters; i++) {
+		if (current_cluster == FAT_EOF) 
+			break;
+		current_cluster = fat[current_cluster];
+	}
+	
+	uint32_t cluster_offset = fdt[fd].pos % CLUSTER_SIZE;
 	// Percorre clusters do arquivo até fim de clusters ou qtd. dada de leitura bater
 	while (current_cluster != FAT_EOF && bytes_read < size) {
 		// Lê bloco da cluster atual
@@ -328,10 +335,12 @@ int fs_read(int fd, void *buffer, uint32_t size){
 		block_read(DATA_START_BLOCK + (current_cluster - 1), block);
 
 		// Copia o conteúdo do bloco para o buffer dado
-		for (uint32_t i = 0; i < BLOCK_SIZE && bytes_read < size; i++) {
+		for (uint32_t i = cluster_offset; i < BLOCK_SIZE && bytes_read < size; i++) {
 			buf[bytes_read] = block[i];
 			bytes_read++;
 		}
+
+		cluster_offset = 0;
 
 		// Passa pro próximo cluster
 		current_cluster = fat[current_cluster];
