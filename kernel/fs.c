@@ -2,6 +2,8 @@
 #include "block.h"
 #include "uart.h"
 
+#define NULL ((void*)0) // NULL
+
 // Constantes FAT
 #define SIMPLEFAT_MAGIC 0x53464154 // Flag de SimpleFAT
 #define FAT_FREE 0x0000 // Flag cluster livre
@@ -188,19 +190,68 @@ int fs_open(const char *name){
 }
 
 int fs_write(int fd, const void *buffer, uint32_t size){
-	/*
-	* TODO:
-	* Alocar clusters.
-	*/
-	/*
-	* TODO:
-	* Atualizar FAT.
-	*/
-	/*
-	* TODO:
-	* Copiar dados.
-	*/
-	return size;
+	// Verifica se tem diretórios disponíveis (inicializados, abaixo do máximo e ainda não aberto)
+	if (fd < 0 || fd >= MAX_OPEN_FILES || fdt[fd].used == 0) 
+		return -1;
+    
+	// Se não escrever ou alocar nada, retorna
+	if (buffer == NULL || size == 0) 
+		return -1;
+
+	// Aloca um descritor novo com o índice dado
+	dir_entry_t *entry = &root[fdt[fd].dir_index];
+
+	// Libera cadeia anterior para reescrever do início
+	uint16_t current = entry->first_cluster;
+	while (current != FAT_EOF && current != FAT_FREE) {
+		uint16_t next = fat[current];
+		fat[current] = FAT_FREE;
+		current = next;
+	}
+
+	// Cálculo de num. de clusters necessária pro arquivo
+	uint32_t num_clusters = ((size + CLUSTER_SIZE - 1) / CLUSTER_SIZE);
+	uint16_t first = FAT_EOF, prev = FAT_EOF;
+	const uint8_t *buf = (const uint8_t *)buffer;
+
+	// Loop de alocação e escrita
+	for (uint32_t i = 0; i < num_clusters; i++) {
+		int free_cluster = cluster_alloc();
+		if (free_cluster == -1) 
+			return -1;
+
+		// 
+		if (i == 0) {
+			first = (uint16_t)free_cluster;
+		} else {
+			fat[prev] = (uint16_t)free_cluster;
+		}
+		prev = (uint16_t)free_cluster;
+
+		// Copiar dados para o bloco do cluster
+		uint8_t block[BLOCK_SIZE];
+		mem_set(block, 0, BLOCK_SIZE);
+
+		// Cálculo de quanto o dado vai ser preenchida na cluster
+		uint32_t offset = i * CLUSTER_SIZE;
+		uint32_t chunk;
+		if ((size - offset) < CLUSTER_SIZE){
+			chunk = (size - offset);
+		} else {
+			chunk = CLUSTER_SIZE;
+		}
+
+		for (uint32_t j = 0; j < chunk; j++)
+			block[j] = buf[offset + j];
+
+		block_write(DATA_START_BLOCK + (free_cluster - 1), block);
+	}
+
+	// Atualiza diretório
+	fdt[fd].pos = size;
+	entry->size = size;
+	entry->first_cluster = first;
+	return (int)size;
 }
 
 int fs_read(int fd, void *buffer, uint32_t size){
