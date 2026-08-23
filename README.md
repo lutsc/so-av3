@@ -1,4 +1,4 @@
-# so-av3 — MicroKernel RISC-V 64 Bits em C
+## MicroKernel RISC-V 64 Bits em C
 
 Implementação de um microkernel para a arquitetura RISC-V (RV64), desenvolvido para a disciplina de Sistemas Operacionais.
 O projeto executa em Supervisor Mode (S-Mode) utilizando OpenSBI como firmware de inicialização e QEMU como ambiente de simulação, sendo um ambiente bare-metal, sem sistema operacional hospedeiro.
@@ -9,8 +9,6 @@ O projeto está dividido em duas partes:
 2. Sistema de arquivos (SimpleFAT) — driver de blocos, superbloco, tabela de alocação (FAT) e operações de arquivo em disco virtual na memória.
 
 ---
-
-## Funcionalidades
 
 ### Núcleo
 
@@ -52,7 +50,7 @@ Requer toolchain riscv64-unknown-elf-gcc e qemu-system-riscv64
 
 ```bash
 make        # compila e gera kernel.elf
-make run    # executa no QEMU (machine virt, 128M, OpenSBI como firmware)
+make run    # executa no QEMU
 make clean  # remove objs e o bin
 ```
 
